@@ -10,35 +10,48 @@ public class CoinManager {
 
     private ArrayList<Coin> coins = new ArrayList<>();
 
-    // Coin positions per level [levelIndex][coin][tileX, tileY]
-    // Placed on row 10 which sits just above solid ground (row 11)
+    // Each entry: {tileCol, tileRow} — verified as air above solid ground
+    // from the actual level pixel data.
+    //
+    // Level 1 (50 tiles wide):
+    //   Main floor is row 10, so coins sit at row 9.
+    //   Raised platform cols 8-11 sits at row 8, so coins there at row 7.
+    //
+    // Level 2 (50 tiles wide):
+    //   Same floor layout as level 1 plus a second raised bridge cols 29-37 at row 9.
+    //   Coins on that bridge sit at row 7.
+    //
+    // Level 3 (36 tiles wide):
+    //   Left platform cols 8-11 row 8, right platform cols 19-23 row 8.
+    //   Coins on platforms at row 7, coins on floor at row 9.
+
     private static final int[][][] COIN_POSITIONS = {
             // Level 1
             {
-                    {3,  9},
-                    {5,  9},
-                    {15, 9},
-                    {20, 9},
-                    {25, 9},
-                    {30, 9},
+                    { 3, 9},   // main floor, left section
+                    {10, 7},   // raised middle platform
+                    {14, 9},   // main floor, just after platform
+                    {25, 9},   // main floor, mid-right
+                    {35, 9},   // main floor, right
+                    {45, 9},   // main floor, far right
             },
             // Level 2
             {
-                    {3,  9},
-                    {7,  9},
-                    {14, 9},
-                    {22, 9},
-                    {28, 9},
-                    {35, 9},
+                    { 3, 9},   // main floor, left
+                    {10, 7},   // raised left platform
+                    {20, 9},   // main floor, centre
+                    {32, 7},   // raised right bridge platform
+                    {40, 9},   // main floor, right
+                    {47, 9},   // main floor, far right
             },
             // Level 3
             {
-                    {3,  9},
-                    {6,  9},
-                    {12, 9},
-                    {18, 9},
-                    {24, 9},
-                    {30, 9},
+                    { 3, 9},   // main floor, left
+                    {10, 7},   // raised left platform
+                    {14, 9},   // main floor, after left platform
+                    {21, 7},   // raised right platform
+                    {27, 9},   // main floor, after right platform
+                    {33, 9},   // main floor, far right
             }
     };
 
