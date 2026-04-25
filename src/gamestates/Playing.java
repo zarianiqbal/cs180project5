@@ -8,6 +8,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 
+import entities.CoinManager;
 import entities.EnemyManager;
 import entities.Player;
 import levels.LevelManager;
@@ -22,6 +23,7 @@ public class Playing extends State implements Statemethods {
     private Player player;
     private LevelManager levelManager;
     private EnemyManager enemyManager;
+    private CoinManager coinManager;
     private PauseOverlay pauseOverlay;
     private GameOverOverlay gameOverOverlay;
     private LevelCompletedOverlay levelCompletedOverlay;
@@ -39,6 +41,9 @@ public class Playing extends State implements Statemethods {
     private boolean gameOver;
     private boolean lvlCompleted;
 
+    // Tracks which level index we are on for coin loading
+    private int currentLevelIndex = 0;
+
     public Playing(Game game) {
         super(game);
         initClasses();
@@ -55,13 +60,16 @@ public class Playing extends State implements Statemethods {
     }
 
     public void loadNextLevel() {
+        currentLevelIndex++;
         resetAll();
         levelManager.loadNextLevel();
         player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
+        coinManager.loadCoins(currentLevelIndex);
     }
 
     private void loadStartLevel() {
         enemyManager.loadEnemies(levelManager.getCurrentLevel());
+        coinManager.loadCoins(currentLevelIndex);
     }
 
     private void calcLvlOffset() {
@@ -71,6 +79,7 @@ public class Playing extends State implements Statemethods {
     private void initClasses() {
         levelManager = new LevelManager(game);
         enemyManager = new EnemyManager(this);
+        coinManager = new CoinManager();
 
         player = new Player(200, 200, (int) (64 * Game.SCALE), (int) (40 * Game.SCALE), this);
         player.loadLvlData(levelManager.getCurrentLevel().getLevelData());
@@ -93,6 +102,7 @@ public class Playing extends State implements Statemethods {
             levelManager.update();
             player.update();
             enemyManager.update(levelManager.getCurrentLevel().getLevelData(), player);
+            coinManager.update(player.getHitbox());
             checkCloseToBorder();
         }
     }
@@ -119,6 +129,7 @@ public class Playing extends State implements Statemethods {
         drawClouds(g);
 
         levelManager.draw(g, xLvlOffset);
+        coinManager.draw(g, xLvlOffset);
         player.render(g, xLvlOffset);
         enemyManager.draw(g, xLvlOffset);
 
@@ -146,6 +157,7 @@ public class Playing extends State implements Statemethods {
         lvlCompleted = false;
         player.resetAll();
         enemyManager.resetAllEnemies();
+        coinManager.resetAllCoins();
     }
 
     public void setGameOver(boolean gameOver) {
