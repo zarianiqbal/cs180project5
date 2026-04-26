@@ -90,7 +90,7 @@ public class Playing extends State implements Statemethods {
         lvlCompleted = false;
         savedCheckpointSpawn = null;
         savedCheckpointLevelIndex = -1;
-        player.resetAll();
+        player.resetAllExceptHealth();  // health carries over to next level
         coinManager.resetAllCoins();
         spikeManager.resetAllSpikes();
         healthPotionManager.resetAllPotions();
@@ -276,7 +276,7 @@ public class Playing extends State implements Statemethods {
         levelManager.resetLevelEnemies(currentLevelIndex);
         levelManager.loadLevel(currentLevelIndex);
         player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
-        player.resetAll();
+        player.resetAllExceptHealth();
         coinManager.loadCoins(currentLevelIndex);
         spikeManager.loadSpikes(currentLevelIndex);
         healthPotionManager.loadPotions(currentLevelIndex);

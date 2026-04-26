@@ -24,7 +24,6 @@ public class PauseOverlay {
     public PauseOverlay(Playing playing) {
         this.playing = playing;
         loadBackground();
-
         createSoundButtons();
         createUrmButtons();
         createVolumeButton();
@@ -37,22 +36,22 @@ public class PauseOverlay {
     }
 
     private void createUrmButtons() {
-        int menuX = (int) (313 * Game.SCALE);
-        int replayX = (int) (387 * Game.SCALE);
+        int menuX    = (int) (313 * Game.SCALE);
+        int replayX  = (int) (387 * Game.SCALE);
         int unpauseX = (int) (462 * Game.SCALE);
-        int bY = (int) (325 * Game.SCALE);
+        int bY       = (int) (325 * Game.SCALE);
 
-        menuB = new UrmButton(menuX, bY, URM_SIZE, URM_SIZE, 2);
-        replayB = new UrmButton(replayX, bY, URM_SIZE, URM_SIZE, 1);
+        menuB    = new UrmButton(menuX,    bY, URM_SIZE, URM_SIZE, 2);
+        replayB  = new UrmButton(replayX,  bY, URM_SIZE, URM_SIZE, 1);
         unpauseB = new UrmButton(unpauseX, bY, URM_SIZE, URM_SIZE, 0);
     }
 
     private void createSoundButtons() {
         int soundX = (int) (450 * Game.SCALE);
         int musicY = (int) (140 * Game.SCALE);
-        int sfxY = (int) (186 * Game.SCALE);
+        int sfxY   = (int) (186 * Game.SCALE);
         musicButton = new SoundButton(soundX, musicY, SOUND_SIZE, SOUND_SIZE);
-        sfxButton = new SoundButton(soundX, sfxY, SOUND_SIZE, SOUND_SIZE);
+        sfxButton   = new SoundButton(soundX, sfxY,   SOUND_SIZE, SOUND_SIZE);
     }
 
     private void loadBackground() {
@@ -66,24 +65,19 @@ public class PauseOverlay {
     public void update() {
         musicButton.update();
         sfxButton.update();
-
         menuB.update();
         replayB.update();
         unpauseB.update();
-
         volumeButton.update();
     }
 
     public void draw(Graphics g) {
         g.drawImage(backgroundImg, bgX, bgY, bgW, bgH, null);
-
         musicButton.draw(g);
         sfxButton.draw(g);
-
         menuB.draw(g);
         replayB.draw(g);
         unpauseB.draw(g);
-
         volumeButton.draw(g);
     }
 
@@ -111,14 +105,11 @@ public class PauseOverlay {
         if (isIn(e, musicButton)) {
             if (musicButton.isMousePressed())
                 musicButton.setMuted(!musicButton.isMuted());
-
         } else if (isIn(e, sfxButton)) {
             if (sfxButton.isMousePressed())
                 sfxButton.setMuted(!sfxButton.isMuted());
-
         } else if (isIn(e, menuB)) {
             if (menuB.isMousePressed()) {
-                // Full reset to level 1 — clears all checkpoints and progress
                 playing.goToMenu();
                 Gamestate.state = Gamestate.MENU;
             }

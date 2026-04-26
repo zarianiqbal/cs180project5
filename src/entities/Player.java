@@ -312,6 +312,27 @@ public class Player extends Entity {
     public void setDown(boolean down) { this.down = down; }
     public void setJump(boolean jump) { this.jump = jump; }
 
+    public int getCurrentHealth() {
+        return currentHealth;
+    }
+
+    // Resets everything except health — used when transitioning between levels
+    // so the player carries their current health into the next level.
+    public void resetAllExceptHealth() {
+        resetDirBooleans();
+        inAir = false;
+        attacking = false;
+        moving = false;
+        playerAction = IDLE;
+        invincibleTick = 0;
+
+        hitbox.x = x;
+        hitbox.y = y;
+
+        if (!IsEntityOnFloor(hitbox, lvlData))
+            inAir = true;
+    }
+
     public void resetAll() {
         resetDirBooleans();
         inAir = false;
