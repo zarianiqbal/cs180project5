@@ -76,7 +76,7 @@ public class LevelCompletedOverlay {
     public void mouseReleased(MouseEvent e) {
         if (isIn(menu, e)) {
             if (menu.isMousePressed()) {
-                playing.resetAll();
+                playing.goToMenu();
                 Gamestate.state = Gamestate.MENU;
             }
         } else if (!playing.isLastLevel() && isIn(next, e)) {

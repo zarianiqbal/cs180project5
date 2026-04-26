@@ -54,7 +54,6 @@ public class Crabby extends Enemy {
                         if (isPlayerCloseForAttack(player))
                             newState(ATTACK);
                     }
-
                     move(lvlData);
                     break;
                 case ATTACK:
@@ -67,6 +66,13 @@ public class Crabby extends Enemy {
                     break;
             }
         }
+    }
+
+    // Returns the tile-based spawn X so EnemyManager can check
+    // proximity to the player's respawn point without accessing
+    // the protected field directly.
+    public float getSpawnX() {
+        return x;
     }
 
     public void drawAttackBox(Graphics g, int xLvlOffset) {

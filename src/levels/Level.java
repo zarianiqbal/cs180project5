@@ -46,6 +46,12 @@ public class Level {
         lvlData = GetLevelData(img);
     }
 
+    // Resets all crabs in this level back to alive — used when starting fresh
+    public void resetEnemies() {
+        for (Crabby c : crabs)
+            c.resetEnemy();
+    }
+
     public int getSpriteIndex(int x, int y) {
         return lvlData[y][x];
     }

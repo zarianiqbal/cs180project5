@@ -88,4 +88,11 @@ public class CoinManager {
             c.reset();
     }
 
+    public boolean allCoinsCollected() {
+        for (Coin c : coins)
+            if (!c.isCollected())
+                return false;
+        return true;
+    }
+
 }

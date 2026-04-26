@@ -8,9 +8,12 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 
+import entities.CheckpointManager;
 import entities.CoinManager;
 import entities.EnemyManager;
+import entities.HealthPotionManager;
 import entities.Player;
+import entities.SpikeManager;
 import levels.LevelManager;
 import main.Game;
 import ui.GameOverOverlay;
@@ -24,6 +27,9 @@ public class Playing extends State implements Statemethods {
     private LevelManager levelManager;
     private EnemyManager enemyManager;
     private CoinManager coinManager;
+    private SpikeManager spikeManager;
+    private HealthPotionManager healthPotionManager;
+    private CheckpointManager checkpointManager;
     private PauseOverlay pauseOverlay;
     private GameOverOverlay gameOverOverlay;
     private LevelCompletedOverlay levelCompletedOverlay;
@@ -41,8 +47,10 @@ public class Playing extends State implements Statemethods {
     private boolean gameOver;
     private boolean lvlCompleted;
 
-    // Tracks which level index we are on for coin loading
     private int currentLevelIndex = 0;
+
+    private float[] savedCheckpointSpawn = null;
+    private int savedCheckpointLevelIndex = -1;
 
     public Playing(Game game) {
         super(game);
@@ -60,16 +68,52 @@ public class Playing extends State implements Statemethods {
     }
 
     public void loadNextLevel() {
+        // Save checkpoint to locals before partial reset wipes savedCheckpointSpawn
+        float[] tempSpawn = null;
+        int tempLevel = -1;
+
+        float[] currentSpawn = checkpointManager.getActiveSpawn();
+        if (currentSpawn != null) {
+            tempSpawn = new float[]{currentSpawn[0], currentSpawn[1]};
+            tempLevel = currentLevelIndex;
+        } else if (savedCheckpointSpawn != null) {
+            tempSpawn = new float[]{savedCheckpointSpawn[0], savedCheckpointSpawn[1]};
+            tempLevel = savedCheckpointLevelIndex;
+        }
+
         currentLevelIndex++;
-        resetAll();
+
+        // Partial reset — skips enemyManager.resetAllEnemies() so dead crabs
+        // on the previous level stay dead if the player returns via checkpoint.
+        gameOver = false;
+        paused = false;
+        lvlCompleted = false;
+        savedCheckpointSpawn = null;
+        savedCheckpointLevelIndex = -1;
+        player.resetAll();
+        coinManager.resetAllCoins();
+        spikeManager.resetAllSpikes();
+        healthPotionManager.resetAllPotions();
+        checkpointManager.resetCheckpoint();
+
+        // Restore saved checkpoint after partial reset
+        savedCheckpointSpawn = tempSpawn;
+        savedCheckpointLevelIndex = tempLevel;
+
         levelManager.loadNextLevel();
         player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
         coinManager.loadCoins(currentLevelIndex);
+        spikeManager.loadSpikes(currentLevelIndex);
+        healthPotionManager.loadPotions(currentLevelIndex);
+        checkpointManager.loadCheckpoint(currentLevelIndex);
     }
 
     private void loadStartLevel() {
         enemyManager.loadEnemies(levelManager.getCurrentLevel());
         coinManager.loadCoins(currentLevelIndex);
+        spikeManager.loadSpikes(currentLevelIndex);
+        healthPotionManager.loadPotions(currentLevelIndex);
+        checkpointManager.loadCheckpoint(currentLevelIndex);
     }
 
     private void calcLvlOffset() {
@@ -80,6 +124,9 @@ public class Playing extends State implements Statemethods {
         levelManager = new LevelManager(game);
         enemyManager = new EnemyManager(this);
         coinManager = new CoinManager();
+        spikeManager = new SpikeManager();
+        healthPotionManager = new HealthPotionManager();
+        checkpointManager = new CheckpointManager();
 
         player = new Player(200, 200, (int) (64 * Game.SCALE), (int) (40 * Game.SCALE), this);
         player.loadLvlData(levelManager.getCurrentLevel().getLevelData());
@@ -103,6 +150,24 @@ public class Playing extends State implements Statemethods {
             player.update();
             enemyManager.update(levelManager.getCurrentLevel().getLevelData(), player);
             coinManager.update(player.getHitbox());
+
+            int spikeDamage = spikeManager.update(player.getHitbox());
+            if (spikeDamage > 0)
+                player.changeHealth(-spikeDamage);
+
+            int healAmount = healthPotionManager.update(player.getHitbox());
+            if (healAmount > 0)
+                player.changeHealth(healAmount);
+
+            checkpointManager.update(player.getHitbox());
+
+            float[] spawn = checkpointManager.getActiveSpawn();
+            if (spawn != null) {
+                player.setCheckpointSpawn(spawn[0], spawn[1]);
+                savedCheckpointSpawn = new float[]{spawn[0], spawn[1]};
+                savedCheckpointLevelIndex = currentLevelIndex;
+            }
+
             checkCloseToBorder();
         }
     }
@@ -130,6 +195,9 @@ public class Playing extends State implements Statemethods {
 
         levelManager.draw(g, xLvlOffset);
         coinManager.draw(g, xLvlOffset);
+        spikeManager.draw(g, xLvlOffset);
+        healthPotionManager.draw(g, xLvlOffset);
+        checkpointManager.draw(g, xLvlOffset);
         player.render(g, xLvlOffset);
         enemyManager.draw(g, xLvlOffset);
 
@@ -151,13 +219,92 @@ public class Playing extends State implements Statemethods {
             g.drawImage(smallCloud, SMALL_CLOUD_WIDTH * 4 * i - (int) (xLvlOffset * 0.7), smallCloudsPos[i], SMALL_CLOUD_WIDTH, SMALL_CLOUD_HEIGHT, null);
     }
 
+    public void restartFromDeath() {
+        gameOver = false;
+        paused = false;
+        lvlCompleted = false;
+
+        float[] currentCheckpoint = checkpointManager.getActiveSpawn();
+
+        if (currentCheckpoint != null) {
+            // Respawn at current level checkpoint — all crabs reset, player gets invincibility frames
+            enemyManager.resetAllEnemies();
+            player.resetAll();
+            player.setInvincible();
+            coinManager.resetAllCoins();
+            spikeManager.resetAllSpikes();
+            healthPotionManager.resetAllPotions();
+
+        } else if (savedCheckpointSpawn != null) {
+            // Return to the level where the last checkpoint was saved
+            currentLevelIndex = savedCheckpointLevelIndex;
+            levelManager.resetLevelEnemies(currentLevelIndex);
+            levelManager.loadLevel(currentLevelIndex);
+            coinManager.loadCoins(currentLevelIndex);
+            spikeManager.loadSpikes(currentLevelIndex);
+            healthPotionManager.loadPotions(currentLevelIndex);
+            checkpointManager.loadCheckpoint(currentLevelIndex);
+            checkpointManager.forceActivate();
+            player.setCheckpointSpawn(savedCheckpointSpawn[0], savedCheckpointSpawn[1]);
+            player.resetAll();
+            player.setInvincible();
+            xLvlOffset = 0;
+
+        } else {
+            // No checkpoint — full restart from level 1
+            currentLevelIndex = 0;
+            levelManager.resetAllLevelEnemies();
+            levelManager.loadLevel(0);
+            player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
+            player.resetAll();
+            coinManager.loadCoins(currentLevelIndex);
+            spikeManager.loadSpikes(currentLevelIndex);
+            healthPotionManager.loadPotions(currentLevelIndex);
+            checkpointManager.loadCheckpoint(currentLevelIndex);
+            xLvlOffset = 0;
+        }
+    }
+
+    public void goToMenu() {
+        gameOver = false;
+        paused = false;
+        lvlCompleted = false;
+        savedCheckpointSpawn = null;
+        savedCheckpointLevelIndex = -1;
+        currentLevelIndex = 0;
+        xLvlOffset = 0;
+
+        levelManager.resetAllLevelEnemies();
+        levelManager.loadLevel(0);
+        player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
+        player.resetAll();
+        coinManager.loadCoins(0);
+        spikeManager.loadSpikes(0);
+        healthPotionManager.loadPotions(0);
+        checkpointManager.loadCheckpoint(0);
+    }
+
     public void resetAll() {
         gameOver = false;
         paused = false;
         lvlCompleted = false;
+        savedCheckpointSpawn = null;
+        savedCheckpointLevelIndex = -1;
         player.resetAll();
         enemyManager.resetAllEnemies();
         coinManager.resetAllCoins();
+        spikeManager.resetAllSpikes();
+        healthPotionManager.resetAllPotions();
+        checkpointManager.resetCheckpoint();
+    }
+
+    public void checkLevelCompleted() {
+        if (coinManager.allCoinsCollected())
+            lvlCompleted = true;
+    }
+
+    public void setLevelCompleted(boolean levelCompleted) {
+        this.lvlCompleted = levelCompleted;
     }
 
     public void setGameOver(boolean gameOver) {
@@ -250,10 +397,6 @@ public class Playing extends State implements Statemethods {
             pauseOverlay.mouseMoved(e);
         else if (lvlCompleted)
             levelCompletedOverlay.mouseMoved(e);
-    }
-
-    public void setLevelCompleted(boolean levelCompleted) {
-        this.lvlCompleted = levelCompleted;
     }
 
     public void setMaxLvlOffset(int lvlOffset) {

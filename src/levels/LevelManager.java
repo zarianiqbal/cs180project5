@@ -36,6 +36,28 @@ public class LevelManager {
         game.getPlaying().setMaxLvlOffset(newLevel.getLvlOffset());
     }
 
+    public void loadLevel(int index) {
+        lvlIndex = index;
+        Level level = levels.get(lvlIndex);
+        game.getPlaying().getEnemyManager().loadEnemies(level);
+        game.getPlaying().getPlayer().loadLvlData(level.getLevelData());
+        game.getPlaying().setMaxLvlOffset(level.getLvlOffset());
+    }
+
+    // Resets crabs on a specific level back to alive —
+    // used before loading that level fresh (no-checkpoint restart, go-to-menu)
+    public void resetLevelEnemies(int index) {
+        if (index < levels.size())
+            levels.get(index).resetEnemies();
+    }
+
+    // Resets crabs on every level — used when going to main menu
+    // so the next full playthrough always starts with all enemies alive
+    public void resetAllLevelEnemies() {
+        for (Level l : levels)
+            l.resetEnemies();
+    }
+
     private void buildAllLevels() {
         BufferedImage[] allLevels = LoadSave.GetAllLevels();
         for (BufferedImage img : allLevels)
@@ -61,7 +83,6 @@ public class LevelManager {
     }
 
     public void update() {
-
     }
 
     public Level getCurrentLevel() {

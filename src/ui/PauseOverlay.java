@@ -75,26 +75,21 @@ public class PauseOverlay {
     }
 
     public void draw(Graphics g) {
-        // Background
         g.drawImage(backgroundImg, bgX, bgY, bgW, bgH, null);
 
-        // Sound buttons
         musicButton.draw(g);
         sfxButton.draw(g);
 
-        // UrmButtons
         menuB.draw(g);
         replayB.draw(g);
         unpauseB.draw(g);
 
-        // Volume Button
         volumeButton.draw(g);
     }
 
     public void mouseDragged(MouseEvent e) {
-        if (volumeButton.isMousePressed()) {
+        if (volumeButton.isMousePressed())
             volumeButton.changeX(e.getX());
-        }
     }
 
     public void mousePressed(MouseEvent e) {
@@ -120,10 +115,12 @@ public class PauseOverlay {
         } else if (isIn(e, sfxButton)) {
             if (sfxButton.isMousePressed())
                 sfxButton.setMuted(!sfxButton.isMuted());
+
         } else if (isIn(e, menuB)) {
             if (menuB.isMousePressed()) {
+                // Full reset to level 1 — clears all checkpoints and progress
+                playing.goToMenu();
                 Gamestate.state = Gamestate.MENU;
-                playing.unpauseGame();
             }
         } else if (isIn(e, replayB)) {
             if (replayB.isMousePressed()) {

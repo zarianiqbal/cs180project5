@@ -43,7 +43,7 @@ public class GameOverOverlay {
     public void mouseReleased(MouseEvent e) {
         if (restartButton.getBounds().contains(e.getX(), e.getY()))
             if (restartButton.isMousePressed()) {
-                playing.resetAll();
+                playing.restartFromDeath();
                 Gamestate.state = Gamestate.PLAYING;
             }
         restartButton.resetBools();
@@ -57,7 +57,8 @@ public class GameOverOverlay {
 
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-            playing.resetAll();
+            // Full reset — clears all checkpoints and returns to level 1
+            playing.goToMenu();
             Gamestate.state = Gamestate.MENU;
         }
     }

@@ -57,6 +57,11 @@ public class Player extends Entity {
     private boolean attackChecked;
     private Playing playing;
 
+    // Invincibility frames — player cannot take damage while this is > 0.
+    // Ticks down every update. Player flashes visually while active.
+    private int invincibleTick = 0;
+    private static final int INVINCIBLE_DURATION = 300; // 1.5 seconds at 200 UPS
+
     public Player(float x, float y, int width, int height, Playing playing) {
         super(x, y, width, height);
         this.playing = playing;
@@ -72,6 +77,16 @@ public class Player extends Entity {
         hitbox.y = y;
     }
 
+    public void setCheckpointSpawn(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    // Called after respawning at a checkpoint — grants temporary invincibility
+    public void setInvincible() {
+        invincibleTick = INVINCIBLE_DURATION;
+    }
+
     private void initAttackBox() {
         attackBox = new Rectangle2D.Float(x, y, (int) (20 * Game.SCALE), (int) (20 * Game.SCALE));
     }
@@ -84,11 +99,15 @@ public class Player extends Entity {
             return;
         }
 
-        updateAttackBox();
+        if (invincibleTick > 0)
+            invincibleTick--;
 
+        updateAttackBox();
         updatePos();
+
         if (attacking)
             checkAttack();
+
         updateAnimationTick();
         setAnimation();
     }
@@ -98,7 +117,6 @@ public class Player extends Entity {
             return;
         attackChecked = true;
         playing.checkEnemyHit(attackBox);
-
     }
 
     private void updateAttackBox() {
@@ -115,15 +133,17 @@ public class Player extends Entity {
     }
 
     public void render(Graphics g, int lvlOffset) {
-        g.drawImage(animations[playerAction][aniIndex], (int) (hitbox.x - xDrawOffset) - lvlOffset + flipX, (int) (hitbox.y - yDrawOffset), width * flipW, height, null);
-//		drawHitbox(g, lvlOffset);
-//		drawAttackBox(g, lvlOffset);
+        // Always draw the UI regardless of invincibility state
         drawUI(g);
-    }
 
-    private void drawAttackBox(Graphics g, int lvlOffsetX) {
-        g.setColor(Color.red);
-        g.drawRect((int) attackBox.x - lvlOffsetX, (int) attackBox.y, (int) attackBox.width, (int) attackBox.height);
+        // Flash the player sprite every 5 ticks while invincible
+        if (invincibleTick > 0 && (invincibleTick / 5) % 2 == 0)
+            return;
+
+        g.drawImage(animations[playerAction][aniIndex],
+                (int) (hitbox.x - xDrawOffset) - lvlOffset + flipX,
+                (int) (hitbox.y - yDrawOffset),
+                width * flipW, height, null);
     }
 
     private void drawUI(Graphics g) {
@@ -142,9 +162,7 @@ public class Player extends Entity {
                 attacking = false;
                 attackChecked = false;
             }
-
         }
-
     }
 
     private void setAnimation() {
@@ -165,7 +183,7 @@ public class Player extends Entity {
         if (attacking) {
             playerAction = ATTACK;
             if (startAni != ATTACK) {
-                aniIndex = 1;
+                aniIndex = 0;
                 aniTick = 0;
                 return;
             }
@@ -219,9 +237,9 @@ public class Player extends Entity {
                     airSpeed = fallSpeedAfterCollision;
                 updateXPos(xSpeed);
             }
-
         } else
             updateXPos(xSpeed);
+
         moving = true;
     }
 
@@ -245,6 +263,10 @@ public class Player extends Entity {
     }
 
     public void changeHealth(int value) {
+        // Ignore damage while invincible (healing still applies)
+        if (value < 0 && invincibleTick > 0)
+            return;
+
         currentHealth += value;
 
         if (currentHealth <= 0)
@@ -280,41 +302,15 @@ public class Player extends Entity {
         this.attacking = attacking;
     }
 
-    public boolean isLeft() {
-        return left;
-    }
-
-    public void setLeft(boolean left) {
-        this.left = left;
-    }
-
-    public boolean isUp() {
-        return up;
-    }
-
-    public void setUp(boolean up) {
-        this.up = up;
-    }
-
-    public boolean isRight() {
-        return right;
-    }
-
-    public void setRight(boolean right) {
-        this.right = right;
-    }
-
-    public boolean isDown() {
-        return down;
-    }
-
-    public void setDown(boolean down) {
-        this.down = down;
-    }
-
-    public void setJump(boolean jump) {
-        this.jump = jump;
-    }
+    public boolean isLeft() { return left; }
+    public void setLeft(boolean left) { this.left = left; }
+    public boolean isUp() { return up; }
+    public void setUp(boolean up) { this.up = up; }
+    public boolean isRight() { return right; }
+    public void setRight(boolean right) { this.right = right; }
+    public boolean isDown() { return down; }
+    public void setDown(boolean down) { this.down = down; }
+    public void setJump(boolean jump) { this.jump = jump; }
 
     public void resetAll() {
         resetDirBooleans();
@@ -323,6 +319,7 @@ public class Player extends Entity {
         moving = false;
         playerAction = IDLE;
         currentHealth = maxHealth;
+        invincibleTick = 0;
 
         hitbox.x = x;
         hitbox.y = y;

@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import gamestates.Playing;
+import main.Game;
 import levels.Level;
 import utilz.LoadSave;
 import static utilz.Constants.EnemyConstants.*;
@@ -32,8 +33,8 @@ public class EnemyManager {
                 c.update(lvlData, player);
                 isAnyActive = true;
             }
-        if(!isAnyActive)
-            playing.setLevelCompleted(true);
+        if (!isAnyActive)
+            playing.checkLevelCompleted();
     }
 
     public void draw(Graphics g, int xLvlOffset) {
@@ -42,14 +43,11 @@ public class EnemyManager {
 
     private void drawCrabs(Graphics g, int xLvlOffset) {
         for (Crabby c : crabbies)
-            if (c.isActive()) {
-                g.drawImage(crabbyArr[c.getEnemyState()][c.getAniIndex()], (int) c.getHitbox().x - xLvlOffset - CRABBY_DRAWOFFSET_X + c.flipX(), (int) c.getHitbox().y - CRABBY_DRAWOFFSET_Y,
+            if (c.isActive())
+                g.drawImage(crabbyArr[c.getEnemyState()][c.getAniIndex()],
+                        (int) c.getHitbox().x - xLvlOffset - CRABBY_DRAWOFFSET_X + c.flipX(),
+                        (int) c.getHitbox().y - CRABBY_DRAWOFFSET_Y,
                         CRABBY_WIDTH * c.flipW(), CRABBY_HEIGHT, null);
-//				c.drawHitbox(g, xLvlOffset);
-//				c.drawAttackBox(g, xLvlOffset);
-
-            }
-
     }
 
     public void checkEnemyHit(Rectangle2D.Float attackBox) {
@@ -72,6 +70,17 @@ public class EnemyManager {
     public void resetAllEnemies() {
         for (Crabby c : crabbies)
             c.resetEnemy();
+    }
+
+    // Resets all crabs except those whose spawn is within 3 tiles of the
+    // player's respawn point — those stay dead so the player isn't
+    // immediately attacked on respawn.
+    public void resetEnemiesSafe(float playerSpawnX) {
+        float safeRadius = Game.TILES_SIZE * 3;
+        for (Crabby c : crabbies) {
+            if (Math.abs(c.getSpawnX() - playerSpawnX) > safeRadius)
+                c.resetEnemy();
+        }
     }
 
 }
