@@ -265,6 +265,25 @@ public class Playing extends State implements Statemethods {
         }
     }
 
+    // Called by the pause menu replay button — restarts the current level
+    // from scratch but preserves any checkpoint saved from a previous level.
+    public void restartCurrentLevel() {
+        gameOver = false;
+        paused = false;
+        lvlCompleted = false;
+        // Note: savedCheckpointSpawn and savedCheckpointLevelIndex are intentionally NOT cleared
+
+        levelManager.resetLevelEnemies(currentLevelIndex);
+        levelManager.loadLevel(currentLevelIndex);
+        player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
+        player.resetAll();
+        coinManager.loadCoins(currentLevelIndex);
+        spikeManager.loadSpikes(currentLevelIndex);
+        healthPotionManager.loadPotions(currentLevelIndex);
+        checkpointManager.loadCheckpoint(currentLevelIndex);
+        xLvlOffset = 0;
+    }
+
     public void goToMenu() {
         gameOver = false;
         paused = false;
