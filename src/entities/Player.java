@@ -24,14 +24,12 @@ public class Player extends Entity {
     private float xDrawOffset = 21 * Game.SCALE;
     private float yDrawOffset = 4 * Game.SCALE;
 
-    // Jumping / Gravity
     private float airSpeed = 0f;
     private float gravity = 0.04f * Game.SCALE;
     private float jumpSpeed = -2.25f * Game.SCALE;
     private float fallSpeedAfterCollision = 0.5f * Game.SCALE;
     private boolean inAir = false;
 
-    // StatusBarUI
     private BufferedImage statusBarImg;
 
     private int statusBarWidth = (int) (192 * Game.SCALE);
@@ -48,7 +46,6 @@ public class Player extends Entity {
     private int currentHealth = maxHealth;
     private int healthWidth = healthBarWidth;
 
-    // AttackBox
     private Rectangle2D.Float attackBox;
 
     private int flipX = 0;
@@ -57,10 +54,8 @@ public class Player extends Entity {
     private boolean attackChecked;
     private Playing playing;
 
-    // Invincibility frames — player cannot take damage while this is > 0.
-    // Ticks down every update. Player flashes visually while active.
     private int invincibleTick = 0;
-    private static final int INVINCIBLE_DURATION = 300; // 1.5 seconds at 200 UPS
+    private static final int INVINCIBLE_DURATION = 300;
 
     public Player(float x, float y, int width, int height, Playing playing) {
         super(x, y, width, height);
@@ -82,7 +77,6 @@ public class Player extends Entity {
         this.y = y;
     }
 
-    // Called after respawning at a checkpoint — grants temporary invincibility
     public void setInvincible() {
         invincibleTick = INVINCIBLE_DURATION;
     }
@@ -105,16 +99,20 @@ public class Player extends Entity {
         updateAttackBox();
         updatePos();
 
+        setAnimation();
+
         if (attacking)
             checkAttack();
 
         updateAnimationTick();
-        setAnimation();
     }
 
     private void checkAttack() {
+        if (playerAction != ATTACK)
+            return;
         if (attackChecked || aniIndex != 1)
             return;
+
         attackChecked = true;
         playing.checkEnemyHit(attackBox);
     }
@@ -133,10 +131,8 @@ public class Player extends Entity {
     }
 
     public void render(Graphics g, int lvlOffset) {
-        // Always draw the UI regardless of invincibility state
         drawUI(g);
 
-        // Flash the player sprite every 5 ticks while invincible
         if (invincibleTick > 0 && (invincibleTick / 5) % 2 == 0)
             return;
 
@@ -157,16 +153,29 @@ public class Player extends Entity {
         if (aniTick >= aniSpeed) {
             aniTick = 0;
             aniIndex++;
+
             if (aniIndex >= GetSpriteAmount(playerAction)) {
                 aniIndex = 0;
-                attacking = false;
-                attackChecked = false;
+
+                if (playerAction == ATTACK) {
+                    attacking = false;
+                    attackChecked = false;
+                }
             }
         }
     }
 
     private void setAnimation() {
         int startAni = playerAction;
+
+        if (attacking) {
+            playerAction = ATTACK;
+            if (startAni != ATTACK) {
+                aniIndex = 0;
+                aniTick = 0;
+            }
+            return;
+        }
 
         if (moving)
             playerAction = RUNNING;
@@ -180,21 +189,10 @@ public class Player extends Entity {
                 playerAction = FALLING;
         }
 
-        if (attacking) {
-            playerAction = ATTACK;
-            if (startAni != ATTACK) {
-                aniIndex = 0;
-                aniTick = 0;
-                return;
-            }
+        if (startAni != playerAction) {
+            aniTick = 0;
+            aniIndex = 0;
         }
-        if (startAni != playerAction)
-            resetAniTick();
-    }
-
-    private void resetAniTick() {
-        aniTick = 0;
-        aniIndex = 0;
     }
 
     private void updatePos() {
@@ -263,7 +261,6 @@ public class Player extends Entity {
     }
 
     public void changeHealth(int value) {
-        // Ignore damage while invincible (healing still applies)
         if (value < 0 && invincibleTick > 0)
             return;
 
@@ -299,6 +296,14 @@ public class Player extends Entity {
     }
 
     public void setAttacking(boolean attacking) {
+        if (attacking && !this.attacking) {
+            this.attacking = true;
+            playerAction = ATTACK;
+            aniTick = 0;
+            aniIndex = 0;
+            attackChecked = false;
+            return;
+        }
         this.attacking = attacking;
     }
 
@@ -348,5 +353,4 @@ public class Player extends Entity {
         if (!IsEntityOnFloor(hitbox, lvlData))
             inAir = true;
     }
-
 }

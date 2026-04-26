@@ -20,6 +20,7 @@ import ui.GameOverOverlay;
 import ui.LevelCompletedOverlay;
 import ui.PauseOverlay;
 import utilz.LoadSave;
+
 import static utilz.Constants.Environment.*;
 
 public class Playing extends State implements Statemethods {
@@ -68,7 +69,6 @@ public class Playing extends State implements Statemethods {
     }
 
     public void loadNextLevel() {
-        // Save checkpoint to locals before partial reset wipes savedCheckpointSpawn
         float[] tempSpawn = null;
         int tempLevel = -1;
 
@@ -83,8 +83,6 @@ public class Playing extends State implements Statemethods {
 
         currentLevelIndex++;
 
-        // Partial reset — skips enemyManager.resetAllEnemies() so dead crabs
-        // on the previous level stay dead if the player returns via checkpoint.
         gameOver = false;
         paused = false;
         lvlCompleted = false;
@@ -96,7 +94,6 @@ public class Playing extends State implements Statemethods {
         healthPotionManager.resetAllPotions();
         checkpointManager.resetCheckpoint();
 
-        // Restore saved checkpoint after partial reset
         savedCheckpointSpawn = tempSpawn;
         savedCheckpointLevelIndex = tempLevel;
 
@@ -213,10 +210,12 @@ public class Playing extends State implements Statemethods {
 
     private void drawClouds(Graphics g) {
         for (int i = 0; i < 3; i++)
-            g.drawImage(bigCloud, i * BIG_CLOUD_WIDTH - (int) (xLvlOffset * 0.3), (int) (204 * Game.SCALE), BIG_CLOUD_WIDTH, BIG_CLOUD_HEIGHT, null);
+            g.drawImage(bigCloud, i * BIG_CLOUD_WIDTH - (int) (xLvlOffset * 0.3), (int) (204 * Game.SCALE),
+                    BIG_CLOUD_WIDTH, BIG_CLOUD_HEIGHT, null);
 
         for (int i = 0; i < smallCloudsPos.length; i++)
-            g.drawImage(smallCloud, SMALL_CLOUD_WIDTH * 4 * i - (int) (xLvlOffset * 0.7), smallCloudsPos[i], SMALL_CLOUD_WIDTH, SMALL_CLOUD_HEIGHT, null);
+            g.drawImage(smallCloud, SMALL_CLOUD_WIDTH * 4 * i - (int) (xLvlOffset * 0.7), smallCloudsPos[i],
+                    SMALL_CLOUD_WIDTH, SMALL_CLOUD_HEIGHT, null);
     }
 
     public void restartFromDeath() {
@@ -227,7 +226,6 @@ public class Playing extends State implements Statemethods {
         float[] currentCheckpoint = checkpointManager.getActiveSpawn();
 
         if (currentCheckpoint != null) {
-            // Respawn at current level checkpoint — all crabs reset, player gets invincibility frames
             enemyManager.resetAllEnemies();
             player.resetAll();
             player.setInvincible();
@@ -236,7 +234,6 @@ public class Playing extends State implements Statemethods {
             healthPotionManager.resetAllPotions();
 
         } else if (savedCheckpointSpawn != null) {
-            // Return to the level where the last checkpoint was saved
             currentLevelIndex = savedCheckpointLevelIndex;
             levelManager.resetLevelEnemies(currentLevelIndex);
             levelManager.loadLevel(currentLevelIndex);
@@ -251,7 +248,6 @@ public class Playing extends State implements Statemethods {
             xLvlOffset = 0;
 
         } else {
-            // No checkpoint — full restart from level 1
             currentLevelIndex = 0;
             levelManager.resetAllLevelEnemies();
             levelManager.loadLevel(0);
@@ -265,13 +261,10 @@ public class Playing extends State implements Statemethods {
         }
     }
 
-    // Called by the pause menu replay button — restarts the current level
-    // from scratch but preserves any checkpoint saved from a previous level.
     public void restartCurrentLevel() {
         gameOver = false;
         paused = false;
         lvlCompleted = false;
-        // Note: savedCheckpointSpawn and savedCheckpointLevelIndex are intentionally NOT cleared
 
         levelManager.resetLevelEnemies(currentLevelIndex);
         levelManager.loadLevel(currentLevelIndex);
@@ -340,9 +333,44 @@ public class Playing extends State implements Statemethods {
 
     @Override
     public void mouseClicked(MouseEvent e) {
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        if (gameOver)
+            gameOverOverlay.mousePressed(e);
+        else if (paused)
+            pauseOverlay.mousePressed(e);
+        else if (lvlCompleted)
+            levelCompletedOverlay.mousePressed(e);
+        else if (e.getButton() == MouseEvent.BUTTON1)
+            player.setAttacking(true);
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        if (gameOver)
+            gameOverOverlay.mouseReleased(e);
+        else if (paused)
+            pauseOverlay.mouseReleased(e);
+        else if (lvlCompleted)
+            levelCompletedOverlay.mouseReleased(e);
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        if (gameOver)
+            gameOverOverlay.mouseMoved(e);
+        else if (paused)
+            pauseOverlay.mouseMoved(e);
+        else if (lvlCompleted)
+            levelCompletedOverlay.mouseMoved(e);
+    }
+
+    public void mouseDragged(MouseEvent e) {
         if (!gameOver)
-            if (e.getButton() == MouseEvent.BUTTON1)
-                player.setAttacking(true);
+            if (paused)
+                pauseOverlay.mouseDragged(e);
     }
 
     @Override
@@ -382,42 +410,6 @@ public class Playing extends State implements Statemethods {
             }
     }
 
-    public void mouseDragged(MouseEvent e) {
-        if (!gameOver)
-            if (paused)
-                pauseOverlay.mouseDragged(e);
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-        if (gameOver)
-            gameOverOverlay.mousePressed(e);
-        else if (paused)
-            pauseOverlay.mousePressed(e);
-        else if (lvlCompleted)
-            levelCompletedOverlay.mousePressed(e);
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        if (gameOver)
-            gameOverOverlay.mouseReleased(e);
-        else if (paused)
-            pauseOverlay.mouseReleased(e);
-        else if (lvlCompleted)
-            levelCompletedOverlay.mouseReleased(e);
-    }
-
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        if (gameOver)
-            gameOverOverlay.mouseMoved(e);
-        else if (paused)
-            pauseOverlay.mouseMoved(e);
-        else if (lvlCompleted)
-            levelCompletedOverlay.mouseMoved(e);
-    }
-
     public void setMaxLvlOffset(int lvlOffset) {
         this.maxLvlOffsetX = lvlOffset;
     }
@@ -437,5 +429,4 @@ public class Playing extends State implements Statemethods {
     public EnemyManager getEnemyManager() {
         return enemyManager;
     }
-
 }

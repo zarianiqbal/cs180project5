@@ -23,7 +23,6 @@ public class Constants {
         public static final int CRABBY_DRAWOFFSET_Y = (int) (9 * Game.SCALE);
 
         public static int GetSpriteAmount(int enemy_type, int enemy_state) {
-
             switch (enemy_type) {
                 case CRABBY:
                     switch (enemy_state) {
@@ -39,9 +38,7 @@ public class Constants {
                             return 5;
                     }
             }
-
             return 0;
-
         }
 
         public static int GetMaxHealth(int enemy_type) {
@@ -60,9 +57,7 @@ public class Constants {
                 default:
                     return 0;
             }
-
         }
-
     }
 
     public static class Environment {
@@ -93,7 +88,6 @@ public class Constants {
         public static class URMButtons {
             public static final int URM_DEFAULT_SIZE = 56;
             public static final int URM_SIZE = (int) (URM_DEFAULT_SIZE * Game.SCALE);
-
         }
 
         public static class VolumeButtons {
@@ -125,22 +119,23 @@ public class Constants {
 
         public static int GetSpriteAmount(int player_action) {
             switch (player_action) {
-                case DEAD:
-                    return 8;
-                case RUNNING:
-                    return 6;
                 case IDLE:
                     return 5;
-                case HIT:
-                    return 4;
+                case RUNNING:
+                    return 6;
                 case JUMP:
-                case ATTACK:
                     return 3;
                 case FALLING:
+                    return 1;
+                case ATTACK:
+                    return 2;
+                case HIT:
+                    return 4;
+                case DEAD:
+                    return 3;
                 default:
                     return 1;
             }
         }
     }
-
 }
